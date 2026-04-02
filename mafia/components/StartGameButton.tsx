@@ -9,34 +9,36 @@ interface StartGameButtonProps {
   selectedRoles: { [role: string]: number };
 }
 
-const civilianRoleName = "Civilian";
-
 export default function StartGameButton({ count, selectedRoles }: StartGameButtonProps) {
   const router = useRouter();
+  // Добавляем setSelectedRoles из стора
   const { setPlayersCount, setSelectedRoles, shuffleRoles } = useGameStore();
 
   const startGame = () => {
-    const rolesArray = Object.entries(selectedRoles)
-      .flatMap(([role, qty]) => Array(qty).fill(role));
+    // 1. Считаем общее количество спец. ролей
+    const specialRolesCount = Object.values(selectedRoles).reduce((a, b) => a + b, 0);
 
-    const specialRolesCount = rolesArray.length;
-
+    // 2. Валидация
     if (specialRolesCount > count) {
-      alert(`You selected ${specialRolesCount} roles, but specified ${count} players. Please reduce the number of roles.`);
+      alert(`Вы выбрали ${specialRolesCount} ролей, но указали ${count} игроков. Уменьшите количество ролей.`);
       return;
     }
 
-    if (count < 3) {
-      alert(`There must be at least 6 players.`);
+    if (count < 3) { // Исправил текст алерта, раз ты проверяешь на 3
+      alert(`Минимум 3 игрока.`);
       return;
     }
 
-    const missing = count - specialRolesCount;
-    const finalRolesArray = [...rolesArray, ...Array(missing).fill(civilianRoleName)];
+    // 3. ПЕРЕДАЕМ ВЫБРАННЫЕ РОЛИ В СТОР (Это самое важное!)
+    setSelectedRoles(selectedRoles);
+    
+    // 4. Устанавливаем количество игроков
+    setPlayersCount(count);
 
-    setPlayersCount(finalRolesArray.length);
-    setSelectedRoles(finalRolesArray);
+    // 5. Запускаем перемешивание (теперь оно увидит роли в сторе)
     shuffleRoles();
+
+    // 6. Переходим на страницу раздачи
     router.push("/show-role");
   };
 
@@ -45,10 +47,17 @@ export default function StartGameButton({ count, selectedRoles }: StartGameButto
       variant="contained"
       color="primary"
       fullWidth
-      sx={{ mt: 3 }}
+      size="large"
+      sx={{ 
+        mt: 3, 
+        py: 1.5, 
+        fontWeight: "bold", 
+        borderRadius: 2,
+        fontSize: "1.1rem" 
+      }}
       onClick={startGame}
     >
-      Start the game
+      Начать игру
     </Button>
   );
 }

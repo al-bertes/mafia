@@ -11,8 +11,8 @@ interface RoleSelectionProps {
   totalPlayers: number;
 }
 
-const allRoles = ["🕶️ Mafia", "🎩 Boss Mafia", "👮‍♂️ Commissar", "🩺 Doctor", "🤢 Virus"];
-const civilianRoleName = "😇 Civilian";
+const allRoles = ["МАФИЯ", "БОСС МАФИИ", "КОМИССАР", "ДОКТОР", "ВИРУС"];
+const civilianRoleName = "МИРНЫЙ";
 
 export default function RoleSelection({ selectedRoles, setSelectedRoles, totalPlayers }: RoleSelectionProps) {
   const updateRoleCount = (role: string, delta: number) => {

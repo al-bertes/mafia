@@ -1,44 +1,64 @@
 import { create } from "zustand";
 
+// Используем единую константу для мирного жителя
+const CIVILIAN_LABEL = "МИРНЫЙ ЖИТЕЛЬ";
+
 interface GameState {
   playersCount: number;
-  selectedRoles: string[];
-  shuffledRoles: string[];
-  publicRoles: string[];
+  selectedRoles: { [role: string]: number }; // Объект с количеством ролей
+  shuffledRoles: string[]; // Итоговый перемешанный массив
+  publicRoles: string[];   // Добавили для поддержки компонента ShowRole
   currentPlayerIndex: number;
+  // Методы
   setPlayersCount: (count: number) => void;
-  setSelectedRoles: (roles: string[]) => void;
+  setSelectedRoles: (roles: { [role: string]: number }) => void;
   shuffleRoles: () => void;
   nextPlayer: () => void;
   resetGame: () => void;
-  reshuffleCurrentRole: () => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
   playersCount: 0,
-  selectedRoles: [],
+  selectedRoles: {},
   shuffledRoles: [],
-  publicRoles: [],
+  publicRoles: [], // Инициализируем пустым массивом
   currentPlayerIndex: 0,
 
   setPlayersCount: (count) => set({ playersCount: count }),
 
   setSelectedRoles: (roles) => set({ selectedRoles: roles }),
 
+  // Основная логика генерации и перемешивания колоды
   shuffleRoles: () => {
-    const selected = [...get().selectedRoles];
-    const players = get().playersCount;
+    const { selectedRoles, playersCount } = get();
+    
+    // 1. Создаем массив на основе выбранных ролей
+    const fullDeck: string[] = [];
+    
+    Object.entries(selectedRoles).forEach(([roleName, count]) => {
+      for (let i = 0; i < count; i++) {
+        // Добавляем роль в верхнем регистре для совпадения с ключами картинок
+        fullDeck.push(roleName.toUpperCase());
+      }
+    });
 
-    while (selected.length < players) {
-      selected.push("Civilian");
+    // 2. Добиваем оставшиеся места мирными жителями
+    while (fullDeck.length < playersCount) {
+      fullDeck.push(CIVILIAN_LABEL);
     }
 
-    for (let i = selected.length - 1; i > 0; i--) {
+    // 3. Алгоритм Фишера-Йетса (самый честный рандом)
+    for (let i = fullDeck.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [selected[i], selected[j]] = [selected[j], selected[i]];
+      [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]];
     }
 
-    set({ shuffledRoles: selected, currentPlayerIndex: 0 });
+    // Сохраняем результат, сбрасываем индекс и очищаем публичные роли (если были)
+    set({ 
+      shuffledRoles: fullDeck, 
+      publicRoles: [], 
+      currentPlayerIndex: 0 
+    });
   },
 
   nextPlayer: () =>
@@ -49,27 +69,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   resetGame: () =>
     set({
       playersCount: 0,
-      selectedRoles: [],
+      selectedRoles: {},
       shuffledRoles: [],
       publicRoles: [],
       currentPlayerIndex: 0,
     }),
-
-  reshuffleCurrentRole: () => {
-    const { shuffledRoles, currentPlayerIndex } = get();
-    const remainingRoles = shuffledRoles.slice(currentPlayerIndex);
-
-    if (remainingRoles.length <= 1) {
-      alert("Нет других ролей для обмена!");
-      return;
-    }
-
-    const randomIndex = Math.floor(Math.random() * (remainingRoles.length - 1)) + 1;
-    const newRoles = [...shuffledRoles];
-    const temp = newRoles[currentPlayerIndex];
-    newRoles[currentPlayerIndex] = newRoles[currentPlayerIndex + randomIndex];
-    newRoles[currentPlayerIndex + randomIndex] = temp;
-
-    set({ shuffledRoles: newRoles });
-  },
 }));
