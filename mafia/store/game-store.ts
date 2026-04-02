@@ -53,7 +53,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]];
     }
 
-    // Сохраняем результат, сбрасываем индекс и очищаем публичные роли (если были)
+    // Сохраняем результат, сбрасываем индекс и очищаем публичные роли (если были)rm -rf .next
     set({ 
       shuffledRoles: fullDeck, 
       publicRoles: [], 

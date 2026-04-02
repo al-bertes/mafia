@@ -6,12 +6,12 @@ import { Typography, Button, Stack, Box, Divider, Grow, Avatar } from "@mui/mate
 
 // Сверяем ключи с теми, что приходят из стора (UPPERCASE)
 const roleImages: Record<string, string> = {
-  "МИРНЫЙ ЖИТЕЛЬ": "/civilian.jpeg",
-  "МАФИЯ": "/mafia.jpg",
-  "БОСС МАФИИ": "/bos_mafia.jpeg",
-  "КОМИССАР": "/kamisar.jpeg",
-  "ДОКТОР": "/doctor.avif",
-  "ВИРУС": "/desise.jpg"
+  "МИРНЫЙ": "/civilian.png",
+  "МАФИЯ": "/mafia.png",
+  "БОСС МАФИИ": "/bos_mafia.png",
+  "КОМИССАР": "/kamisar.png",
+  "ДОКТОР": "/doctor.png",
+  "ВИРУС": "/desise.png"
 };
 
 // Функция для определения цвета рамки в зависимости от роли

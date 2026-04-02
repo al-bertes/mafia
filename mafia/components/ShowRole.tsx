@@ -6,7 +6,6 @@ import { useGameStore } from "@/store/game-store";
 import { Typography, Button, Stack, Box, Fade } from "@mui/material";
 import Image from "next/image";
 
-// Важно: Ключи должны СТРОГО совпадать с тем, что генерирует стор (в верхнем регистре)
 const roleImages: Record<string, string> = {
   "МИРНЫЙ ЖИТЕЛЬ": "/civilian.png",
   "МАФИЯ": "/mafia.png",
@@ -18,7 +17,9 @@ const roleImages: Record<string, string> = {
 
 export default function ShowRole() {
   const router = useRouter();
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  // Состояние для управления анимацией Fade
+  const [isVisible, setIsVisible] = useState(true);
   
   const {
     shuffledRoles,
@@ -28,16 +29,13 @@ export default function ShowRole() {
     publicRoles = []
   } = useGameStore();
 
-  // Защита от пустого стора (например, при перезагрузке страницы)
   useEffect(() => {
     if (!shuffledRoles || shuffledRoles.length === 0) {
       router.push("/");
     }
   }, [shuffledRoles, router]);
 
-  if (!shuffledRoles || shuffledRoles.length === 0) {
-    return null;
-  }
+  if (!shuffledRoles || shuffledRoles.length === 0) return null;
 
   const handleNext = () => {
     if (currentPlayerIndex + 1 >= playersCount) {
@@ -45,118 +43,132 @@ export default function ShowRole() {
       return;
     }
 
-    // Анимация перехода
-    setIsTransitioning(true);
+    // 1. Начинаем исчезновение (Fade Out)
+    setIsVisible(false);
 
+    // 2. Ждем, пока экран станет полностью черным (600ms - стандарт тайм-аута Fade)
     setTimeout(() => {
+      // 3. Меняем данные в сторе, пока нас не видно
       nextPlayer();
+      
+      // 4. Начинаем появление (Fade In) уже с новыми данными и новой картинкой
       setTimeout(() => {
-        setIsTransitioning(false);
-      }, 100);
+        setIsVisible(true);
+      }, 100); 
     }, 600);
   };
 
   const currentRoleRaw = shuffledRoles[currentPlayerIndex] || "";
-  // Приводим к верхнему регистру для надежного поиска картинки
   const currentRole = currentRoleRaw.toUpperCase();
   const currentPublicRole = publicRoles[currentPlayerIndex];
-  
-  // Безопасное получение пути к картинке
   const currentRoleImage = roleImages[currentRole] || "/civilian.png";
 
   return (
     <Box sx={{ 
       position: "fixed", 
-      top: 0, 
-      left: 0, 
-      width: "100vw", 
-      height: "100vh", 
+      inset: 0, 
       bgcolor: "black", 
-      overflow: "hidden" 
+      overflow: "hidden",
+      width: "100vw",
+      height: "100vh" 
     }}>
       
-      <Fade in={!isTransitioning} timeout={600}>
-        <Box sx={{ width: "100%", height: "100%" }}>
-          
-          {/* Фоновое изображение */}
-          <Box sx={{ position: "absolute", inset: 0 }}>
+      {/* Фрейм под картинку: она всегда на заднем плане и не меняет размер */}
+      <Box sx={{ 
+        position: "absolute", 
+        inset: 0, 
+        zIndex: 1,
+        width: "100%",
+        height: "100%"
+      }}>
+        <Fade in={isVisible} timeout={600}>
+          <Box sx={{ width: "100%", height: "100%", position: "relative" }}>
             <Image
               src={currentRoleImage}
               alt={currentRole}
               fill
-              priority
-              style={{ objectFit: "cover" }}
+              priority // Заставляет браузер грузить картинку быстрее
+              quality={90}
+              style={{ objectFit: "cover", objectPosition: "center" }}
             />
-            {/* Градиент для затемнения нижней части и краев */}
+            {/* Усиленный виньеточный градиент для атмосферы */}
             <Box sx={{
               position: "absolute",
               inset: 0,
-              background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.8) 100%)",
+              background: "radial-gradient(circle, rgba(0,0,0,0) 20%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.9) 100%), linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.7) 100%)",
             }} />
           </Box>
+        </Fade>
+      </Box>
 
-          <Stack 
-            justifyContent="space-between" 
-            alignItems="center" 
-            sx={{ position: "relative", zIndex: 2, height: "100%", pt: 6, pb: 8, px: 4 }}
-          >
-            {/* Верхний счетчик */}
-            <Typography variant="overline" sx={{ color: "rgba(255,255,255,0.5)", letterSpacing: 3, fontWeight: 500 }}>
-              ИГРОК {currentPlayerIndex + 1} ИЗ {playersCount}
-            </Typography>
+      {/* Контентная часть */}
+      <Fade in={isVisible} timeout={600}>
+        <Stack 
+          justifyContent="space-between" 
+          alignItems="center" 
+          sx={{ 
+            position: "relative", 
+            zIndex: 2, 
+            height: "100%", 
+            pt: 6, 
+            pb: 8, 
+            px: 4 
+          }}
+        >
+          <Typography variant="overline" sx={{ color: "rgba(255,255,255,0.6)", letterSpacing: 4, fontWeight: 600 }}>
+            ИГРОК {currentPlayerIndex + 1} ИЗ {playersCount}
+          </Typography>
 
-            {/* Нижний блок: Название роли и Кнопка */}
-            <Stack spacing={3} sx={{ width: "100%", alignItems: "center" }}>
-              
-              <Box sx={{ textAlign: "center", width: "100%" }}>
-                <Box
-                  sx={{
-                    display: "inline-block",
-                    border: "1px solid rgba(255,255,255,0.25)",
-                    backdropFilter: "blur(4px)",
-                    backgroundColor: "rgba(0,0,0,0.4)",
-                    px: 6,
-                    py: 2.5,
-                    borderRadius: 4, // Скругленные углы
-                    boxShadow: "0 10px 40px rgba(0,0,0,0.6)"
-                  }}
-                >
-                  <Typography variant="h4" sx={{ color: "white", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>
-                    {currentRole}
-                  </Typography>
-                </Box>
-                
-                {currentPublicRole && (
-                  <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.6)", mt: 2, fontWeight: 300, fontStyle: "italic" }}>
-                     — {currentPublicRole} —
-                  </Typography>
-                )}
-              </Box>
-
-              <Button
-                variant="contained"
-                disabled={isTransitioning}
-                sx={{ 
-                  width: "100%", 
-                  maxWidth: 340, 
-                  bgcolor: "rgba(255,255,255,0.95)", 
-                  color: "black",
-                  borderRadius: 3, // Скругленная кнопка
-                  py: 2, 
-                  fontSize: "1.1rem", 
-                  fontWeight: "bold",
-                  transition: "all 0.2s ease",
-                  "&:hover": { bgcolor: "white", transform: "scale(1.02)" },
-                  "&.Mui-disabled": { bgcolor: "rgba(255,255,255,0.3)" }
+          <Stack spacing={4} sx={{ width: "100%", alignItems: "center" }}>
+            <Box sx={{ textAlign: "center", width: "100%" }}>
+              <Box
+                sx={{
+                  display: "inline-block",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  backdropFilter: "blur(8px)",
+                  backgroundColor: "rgba(0,0,0,0.5)",
+                  px: 5,
+                  py: 3,
+                  borderRadius: 6,
+                  boxShadow: "0 20px 50px rgba(0,0,0,0.8)"
                 }}
-                onClick={handleNext}
               >
-                {currentPlayerIndex + 1 === playersCount ? "ПОСМОТРЕТЬ СПИСОК" : "СЛЕДУЮЩИЙ ИГРОК"}
-              </Button>
-            </Stack>
+                <Typography variant="h3" sx={{ color: "white", fontWeight: 900, textTransform: "uppercase", letterSpacing: 2 }}>
+                  {currentRole}
+                </Typography>
+              </Box>
+              
+              {currentPublicRole && (
+                <Typography variant="h6" sx={{ color: "rgba(255,255,255,0.7)", mt: 2, fontWeight: 300 }}>
+                   {currentPublicRole}
+                </Typography>
+              )}
+            </Box>
 
+            <Button
+              variant="contained"
+              disabled={!isVisible} // Отключаем кнопку во время анимации
+              sx={{ 
+                width: "100%", 
+                maxWidth: 360, 
+                bgcolor: "white", 
+                color: "black",
+                borderRadius: 4,
+                py: 2.2, 
+                fontSize: "1.1rem", 
+                fontWeight: "900",
+                letterSpacing: 1,
+                boxShadow: "0 10px 20px rgba(0,0,0,0.4)",
+                transition: "all 0.3s ease",
+                "&:hover": { bgcolor: "#f0f0f0", transform: "translateY(-2px)" },
+                "&.Mui-disabled": { bgcolor: "rgba(255,255,255,0.2)" }
+              }}
+              onClick={handleNext}
+            >
+              {currentPlayerIndex + 1 === playersCount ? "ПОСМОТРЕТЬ ИТОГИ" : "ДАЛЕЕ"}
+            </Button>
           </Stack>
-        </Box>
+        </Stack>
       </Fade>
     </Box>
   );
